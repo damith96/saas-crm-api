@@ -1,0 +1,43 @@
+# ──────────────────────────────────────────────
+# .NET / C#
+# ──────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+out/
+
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+*.nupkg
+*.snupkg
+**/[Pp]ackages/
+!**/[Pp]ackages/build/
+
+[Pp]ublish/
+PublishProfiles/
+**/Properties/PublishProfiles/
+
+*.log
+*.tmp
+*.cache
+
+secrets.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# ──────────────────────────────────────────────
+# OS / Editor
+# ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
