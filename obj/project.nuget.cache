@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "ZRxSm2yO61c=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\IMAKA\\Documents\\vertex-crm\\saas-crm-api\\VertexCRM.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\IMAKA\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.1\\microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
+    "C:\\Users\\IMAKA\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
