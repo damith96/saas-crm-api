@@ -1,4 +1,4 @@
-@VertexCRM_HostAddress = http://localhost:5197
+@VertexCRM_HostAddress = http://localhost:5187
 
 GET {{VertexCRM_HostAddress}}/weatherforecast/
 Accept: application/json

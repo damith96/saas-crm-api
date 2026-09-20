@@ -1,12 +1,16 @@
+
+using Microsoft.EntityFrameworkCore;
 using VertexCRM.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.  
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    ));
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
