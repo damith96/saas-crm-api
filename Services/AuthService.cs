@@ -18,7 +18,7 @@ public class AuthService : IAuthService
         _passwordHasher = new PasswordHasher<User>();
     }
 
-    public async Task<AuthResponseDTO> RegisterAsync(RegisterRequestDTO request)
+    public async Task<AuthResponseDTO> RegisterUser(RegisterRequestDTO request)
     {
         var emailExists = await _context.Users
             .AnyAsync(x => x.Email == request.Email);
@@ -41,6 +41,45 @@ public class AuthService : IAuthService
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         _context.Users.Add(user);
+
+        await _context.SaveChangesAsync();
+
+        return new AuthResponseDTO
+        {
+            UserId = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email
+        };
+    }
+
+    public async Task<AuthResponseDTO> LoginUser(LoginRequestDTO request)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email == request.Email);
+
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("Your account is inactive.");
+        }
+
+        var passwordResult = _passwordHasher.VerifyHashedPassword(
+            user,
+            user.PasswordHash,
+            request.Password
+        );
+
+        if (passwordResult == PasswordVerificationResult.Failed)
+        {
+            throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
+        user.LastLoginAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 

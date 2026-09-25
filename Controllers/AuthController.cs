@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using VertexCRM.Constants;
 using VertexCRM.DTOs.Auth;
+using VertexCRM.DTOs.Common;
 using VertexCRM.Interfaces;
 
 namespace VertexCRM.Controllers;
@@ -20,13 +22,28 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var response = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterUser(request);
 
-            return Ok(response);
+            return StatusCode(201, new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "User registered successfully.", result));
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(new { message = ex.Message });
+            return Conflict(new CommonResponseDTO(ResponseConstants.StatusMessages.FAILED, ex.Message));
+        }
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginRequestDTO request)
+    {
+        try
+        {
+            var result = await _authService.LoginUser(request);
+
+            return Ok(new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "Login successfully.", result));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new CommonResponseDTO(ResponseConstants.StatusMessages.FAILED, ex.Message));
         }
     }
 }

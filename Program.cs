@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using VertexCRM.Data;
 using VertexCRM.Interfaces;
+using VertexCRM.Middleware;
 using VertexCRM.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,12 +17,19 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
