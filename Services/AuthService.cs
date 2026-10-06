@@ -8,6 +8,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+using System;
+using System.Security.Cryptography;
 
 namespace VertexCRM.Services;
 
@@ -36,7 +40,7 @@ public class AuthService : IAuthService
         }
 
         var user = new User
-        { 
+        {
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
@@ -86,11 +90,20 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
+        var accessToken = GenerateJwtToken(user);
+
+        var refreshToken = new RefreshToken
+        {
+            UserId = user.Id,
+            Token = GenerateRefreshToken(),
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedOn = DateTime.UtcNow
+        };
+
         user.LastLoginAt = DateTime.UtcNow;
+        _context.RefreshTokens.Add(refreshToken);
 
         await _context.SaveChangesAsync();
-
-        var accessToken = GenerateJwtToken(user);
 
         return new AuthResponseDTO
         {
@@ -98,10 +111,68 @@ public class AuthService : IAuthService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
-            AccessToken = accessToken
+            AccessToken = accessToken,
+            RefreshToken = refreshToken.Token
         };
     }
 
+    public async Task<AuthResponseDTO> RefreshToken(RefreshTokenRequestDTO request)
+{
+    var refreshToken = await _context.RefreshTokens
+        .Include(x => x.User)
+        .FirstOrDefaultAsync(x => x.Token == request.RefreshToken);
+
+    if (refreshToken == null)
+    {
+        throw new UnauthorizedAccessException("Invalid refresh token.");
+    }
+
+    if (refreshToken.IsRevoked)
+    {
+        throw new UnauthorizedAccessException("Refresh token has been revoked.");
+    }
+
+    if (refreshToken.ExpiresAt <= DateTime.UtcNow)
+    {
+        throw new UnauthorizedAccessException("Refresh token has expired.");
+    }
+
+    var user = refreshToken.User;
+
+    if (!user.IsActive)
+    {
+        throw new UnauthorizedAccessException("User account is inactive.");
+    }
+
+    // Revoke the old refresh token
+    refreshToken.RevokedAt = DateTime.UtcNow;
+
+    // Create a new refresh token
+    var newRefreshToken = new RefreshToken
+    {
+        UserId = user.Id,
+        Token = GenerateRefreshToken(),
+        ExpiresAt = DateTime.UtcNow.AddDays(7),
+        CreatedOn = DateTime.UtcNow
+    };
+
+    _context.RefreshTokens.Add(newRefreshToken);
+
+    // Create a new access token
+    var accessToken = GenerateAccessToken(user);
+
+    await _context.SaveChangesAsync();
+
+    return new AuthResponseDTO
+    {
+        UserId = user.Id,
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Email = user.Email,
+        AccessToken = accessToken,
+        RefreshToken = newRefreshToken.Token
+    };
+}
     private string GenerateJwtToken(User user)
     {
         var key = _configuration["Jwt:Key"]
@@ -138,5 +209,12 @@ public class AuthService : IAuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var randomBytes = RandomNumberGenerator.GetBytes(64);
+
+        return Convert.ToBase64String(randomBytes);
     }
 }
