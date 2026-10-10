@@ -10,4 +10,5 @@ public interface IAuthService
     Task<AuthResponseDTO> LoginUser(LoginRequestDTO request);
 
     Task<AuthResponseDTO> RefreshToken(RefreshTokenRequestDTO request);
+    Task LogoutUser(LogoutRequestDTO request);
 }
