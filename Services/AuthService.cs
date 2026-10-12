@@ -31,13 +31,12 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDTO> RegisterUser(RegisterRequestDTO request)
     {
+        // InvalidOperationException — conflict with existing state
         var emailExists = await _context.Users
             .AnyAsync(x => x.Email == request.Email);
 
         if (emailExists)
-        {
             throw new InvalidOperationException("Email is already registered.");
-        }
 
         var user = new User
         {
@@ -69,15 +68,13 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .FirstOrDefaultAsync(x => x.Email == request.Email);
 
+        // UnauthorizedAccessException — credentials don't check out
         if (user == null)
-        {
             throw new UnauthorizedAccessException("Invalid email or password.");
-        }
 
+        // InvalidOperationException — account state conflict
         if (!user.IsActive)
-        {
-            throw new UnauthorizedAccessException("Your account is inactive.");
-        }
+            throw new InvalidOperationException("Your account is inactive.");
 
         var passwordResult = _passwordHasher.VerifyHashedPassword(
             user,
@@ -122,27 +119,21 @@ public class AuthService : IAuthService
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Token == request.RefreshToken);
 
+        // UnauthorizedAccessException — token doesn't exist, revoked, or expired
         if (refreshToken == null)
-        {
             throw new UnauthorizedAccessException("Invalid refresh token.");
-        }
 
         if (refreshToken.IsRevoked)
-        {
             throw new UnauthorizedAccessException("Refresh token has been revoked.");
-        }
 
         if (refreshToken.ExpiresAt <= DateTime.UtcNow)
-        {
             throw new UnauthorizedAccessException("Refresh token has expired.");
-        }
 
         var user = refreshToken.User;
 
+        // InvalidOperationException — account state conflict
         if (!user.IsActive)
-        {
-            throw new UnauthorizedAccessException("User account is inactive.");
-        }
+            throw new InvalidOperationException("User account is inactive.");
 
         // Revoke the old refresh token
         refreshToken.RevokedAt = DateTime.UtcNow;
