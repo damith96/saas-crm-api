@@ -113,11 +113,11 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponseDTO> RefreshToken(RefreshTokenRequestDTO request)
+    public async Task<AuthResponseDTO> RefreshToken(string refreshTokenValue)
     {
         var refreshToken = await _context.RefreshTokens
             .Include(x => x.User)
-            .FirstOrDefaultAsync(x => x.Token == request.RefreshToken);
+            .FirstOrDefaultAsync(x => x.Token == refreshTokenValue);
 
         // UnauthorizedAccessException — token doesn't exist, revoked, or expired
         if (refreshToken == null)
@@ -165,10 +165,10 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task LogoutUser(LogoutRequestDTO request)
+    public async Task LogoutUser(string refreshTokenValue)
     {
         var refreshToken = await _context.RefreshTokens
-            .FirstOrDefaultAsync(x => x.Token == request.RefreshToken);
+            .FirstOrDefaultAsync(x => x.Token == refreshTokenValue);
 
         // Idempotent logout: unknown or already-revoked tokens need no action.
         if (refreshToken == null || refreshToken.IsRevoked)

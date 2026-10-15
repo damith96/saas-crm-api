@@ -46,18 +46,50 @@ public class AuthController : ControllerBase
         return Ok(new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "Login successfully.", result));
     }
 
-    [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshToken(RefreshTokenRequestDTO request)
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken()
     {
-        var result = await _authService.RefreshToken(request);
+        var refreshToken = Request.Cookies["refreshToken"];
 
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            return Unauthorized(new CommonResponseDTO(ResponseConstants.StatusMessages.FAILED, "Refresh Token is missing."));
+        }
+
+        var result = await _authService.RefreshToken(refreshToken);
+
+        var environment = HttpContext.RequestServices
+            .GetRequiredService<IWebHostEnvironment>();
+
+        Response.Cookies.Append(
+            "refreshToken",
+            result.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = !environment.IsDevelopment(),
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(7),
+                Path = "/api/auth"
+            });
+
+        result.RefreshToken = string.Empty;
         return Ok(new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "Refresh Token Received successfully.", result));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout(LogoutRequestDTO request)
+    public async Task<IActionResult> Logout()
     {
-        await _authService.LogoutUser(request);
+        var refreshToken = Request.Cookies["refreshToken"];
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            await _authService.LogoutUser(refreshToken);
+        }
+
+        Response.Cookies.Delete("refreshToken", new CookieOptions
+        {
+            Path = "/api/auth"
+        });
 
         return Ok(new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "Logged out successfully."));
     }
