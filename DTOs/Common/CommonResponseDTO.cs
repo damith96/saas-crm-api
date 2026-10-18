@@ -12,4 +12,6 @@ public class CommonResponseDTO
         Message = message;
         Data = data;
     }
+
+
 }

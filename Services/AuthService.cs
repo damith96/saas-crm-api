@@ -180,6 +180,7 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
     }
+
     private string GenerateJwtToken(User user)
     {
         var key = _configuration["Jwt:Key"]
