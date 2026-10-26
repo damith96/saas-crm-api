@@ -93,4 +93,28 @@ public class AuthController : ControllerBase
 
         return Ok(new CommonResponseDTO(ResponseConstants.StatusMessages.SUCCESS, "Logged out successfully."));
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDTO request)
+    {
+        await _authService.ForgotPassword(request);
+
+        // Always return 200 regardless of whether the email exists,
+        // to prevent user enumeration.
+        return Ok(new CommonResponseDTO(
+            ResponseConstants.StatusMessages.SUCCESS,
+            "If an account with that email exists, a password reset link has been sent."
+        ));
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDTO request)
+    {
+        await _authService.ResetPassword(request);
+
+        return Ok(new CommonResponseDTO(
+            ResponseConstants.StatusMessages.SUCCESS,
+            "Password has been reset successfully."
+        ));
+    }
 }

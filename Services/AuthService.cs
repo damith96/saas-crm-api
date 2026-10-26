@@ -1,17 +1,17 @@
+using System.Net;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using VertexCRM.Data;
 using VertexCRM.DTOs.Auth;
 using VertexCRM.Entities;
+using VertexCRM.Exceptions;
 using VertexCRM.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
-using System;
-using System.Security.Cryptography;
 
 namespace VertexCRM.Services;
 
@@ -19,24 +19,28 @@ public class AuthService : IAuthService
 {
     private readonly ApplicationDbContext _context;
     private readonly PasswordHasher<User> _passwordHasher;
-
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
 
-    public AuthService(ApplicationDbContext context, IConfiguration configuration)
+    public AuthService(
+        ApplicationDbContext context,
+        IConfiguration configuration,
+        IEmailService emailService)
     {
         _context = context;
         _passwordHasher = new PasswordHasher<User>();
         _configuration = configuration;
+        _emailService = emailService;
     }
 
     public async Task<AuthResponseDTO> RegisterUser(RegisterRequestDTO request)
     {
-        // InvalidOperationException — conflict with existing state
+        // AppException(Conflict) — email already taken
         var emailExists = await _context.Users
             .AnyAsync(x => x.Email == request.Email);
 
         if (emailExists)
-            throw new InvalidOperationException("Email is already registered.");
+            throw new AppException(HttpStatusCode.Conflict, "Email is already registered.");
 
         var user = new User
         {
@@ -68,13 +72,11 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .FirstOrDefaultAsync(x => x.Email == request.Email);
 
-        // UnauthorizedAccessException — credentials don't check out
         if (user == null)
-            throw new UnauthorizedAccessException("Invalid email or password.");
+            throw new AppException(HttpStatusCode.Unauthorized, "Invalid email or password.");
 
-        // InvalidOperationException — account state conflict
         if (!user.IsActive)
-            throw new InvalidOperationException("Your account is inactive.");
+            throw new AppException(HttpStatusCode.Conflict, "Your account is inactive.");
 
         var passwordResult = _passwordHasher.VerifyHashedPassword(
             user,
@@ -83,9 +85,7 @@ public class AuthService : IAuthService
         );
 
         if (passwordResult == PasswordVerificationResult.Failed)
-        {
-            throw new UnauthorizedAccessException("Invalid email or password.");
-        }
+            throw new AppException(HttpStatusCode.Unauthorized, "Invalid email or password.");
 
         var accessToken = GenerateJwtToken(user);
 
@@ -119,21 +119,19 @@ public class AuthService : IAuthService
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Token == refreshTokenValue);
 
-        // UnauthorizedAccessException — token doesn't exist, revoked, or expired
         if (refreshToken == null)
-            throw new UnauthorizedAccessException("Invalid refresh token.");
+            throw new AppException(HttpStatusCode.Unauthorized, "Invalid refresh token.");
 
         if (refreshToken.IsRevoked)
-            throw new UnauthorizedAccessException("Refresh token has been revoked.");
+            throw new AppException(HttpStatusCode.Unauthorized, "Refresh token has been revoked.");
 
         if (refreshToken.ExpiresAt <= DateTime.UtcNow)
-            throw new UnauthorizedAccessException("Refresh token has expired.");
+            throw new AppException(HttpStatusCode.Unauthorized, "Refresh token has expired.");
 
         var user = refreshToken.User;
 
-        // InvalidOperationException — account state conflict
         if (!user.IsActive)
-            throw new InvalidOperationException("User account is inactive.");
+            throw new AppException(HttpStatusCode.Conflict, "User account is inactive.");
 
         // Revoke the old refresh token
         refreshToken.RevokedAt = DateTime.UtcNow;
@@ -177,6 +175,70 @@ public class AuthService : IAuthService
         }
 
         refreshToken.RevokedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ForgotPassword(ForgotPasswordRequestDTO request)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email == request.Email);
+
+        // Always return success to avoid leaking whether the email exists.
+        if (user == null || !user.IsActive)
+            return;
+
+        // Invalidate any existing unused tokens for this user.
+        var existingTokens = await _context.PasswordResetTokens
+            .Where(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var t in existingTokens)
+            t.IsUsed = true;
+
+        // Generate a new secure token.
+        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+        var resetToken = new PasswordResetToken
+        {
+            UserId = user.Id,
+            Token = rawToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+            CreatedOn = DateTime.UtcNow
+        };
+
+        _context.PasswordResetTokens.Add(resetToken);
+        await _context.SaveChangesAsync();
+
+        await _emailService.SendPasswordResetEmailAsync(user.Email, rawToken);
+    }
+
+    public async Task ResetPassword(ResetPasswordRequestDTO request)
+    {
+        var resetToken = await _context.PasswordResetTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.Token == request.Token);
+
+        if (resetToken == null || resetToken.IsUsed)
+            throw new AppException(HttpStatusCode.BadRequest, "Invalid or expired password reset token.");
+
+        if (resetToken.ExpiresAt <= DateTime.UtcNow)
+            throw new AppException(HttpStatusCode.BadRequest, "Invalid or expired password reset token.");
+
+        var user = resetToken.User;
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+
+        // Mark the token as used and revoke all refresh tokens for this user
+        // so existing sessions are terminated after a password change.
+        resetToken.IsUsed = true;
+
+        var activeRefreshTokens = await _context.RefreshTokens
+            .Where(rt => rt.UserId == user.Id && rt.RevokedAt == null)
+            .ToListAsync();
+
+        foreach (var rt in activeRefreshTokens)
+            rt.RevokedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
     }

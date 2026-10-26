@@ -34,26 +34,21 @@ public class GlobalExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        var (statusCode, message) = exception switch
+        HttpStatusCode statusCode;
+        string message;
+
+        if (exception is AppException appException)
         {
-            // 400 - null or missing required fields
-            ArgumentNullException ex => (HttpStatusCode.BadRequest, ex.Message),
-
-            // 400 - invalid argument values (e.g. bad format)
-            ArgumentException ex => (HttpStatusCode.BadRequest, ex.Message),
-
-            // 422 - request is well-formed but fails semantic/business validation
-            UnprocessableEntityException ex => (HttpStatusCode.UnprocessableEntity, ex.Message),
-
-            // 409 - conflict with existing state (e.g. email taken, account inactive)
-            InvalidOperationException ex => (HttpStatusCode.Conflict, ex.Message),
-
-            // 401 - bad credentials or invalid/expired/revoked token
-            UnauthorizedAccessException ex => (HttpStatusCode.Unauthorized, ex.Message),
-
-            // 500 - everything else
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.")
-        };
+            // Known application error — the message is safe to expose to the client.
+            statusCode = appException.StatusCode;
+            message = appException.Message;
+        }
+        else
+        {
+            // Unexpected error — never forward the message to avoid leaking internals.
+            statusCode = HttpStatusCode.InternalServerError;
+            message = "An unexpected error occurred. Please try again later.";
+        }
 
         context.Response.StatusCode = (int)statusCode;
 
