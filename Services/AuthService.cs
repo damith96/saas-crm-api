@@ -12,6 +12,9 @@ using VertexCRM.DTOs.Auth;
 using VertexCRM.Entities;
 using VertexCRM.Exceptions;
 using VertexCRM.Interfaces;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using VertexCRM.Constants;
 
 namespace VertexCRM.Services;
 
@@ -21,16 +24,32 @@ public class AuthService : IAuthService
     private readonly PasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
+    private readonly IHttpContextAccessor _contextAccessor;
 
     public AuthService(
         ApplicationDbContext context,
+        IHttpContextAccessor contextAccessor,
         IConfiguration configuration,
         IEmailService emailService)
     {
         _context = context;
+        _contextAccessor = contextAccessor;
         _passwordHasher = new PasswordHasher<User>();
         _configuration = configuration;
         _emailService = emailService;
+    }
+
+    public int TenantId
+    {
+        get
+        {
+            var tenantId = _contextAccessor?.HttpContext?.User?.Claims
+                .FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+            if (string.IsNullOrEmpty(tenantId))
+                throw new InvalidOperationException("Could not resolve tenant context.");
+
+            return int.Parse(tenantId);
+        }
     }
 
     public async Task<AuthResponseDTO> RegisterUser(RegisterRequestDTO request)
@@ -258,7 +277,8 @@ public class AuthService : IAuthService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+            new Claim("tenant_id", user.TenantId.ToString())
         };
 
         var securityKey = new SymmetricSecurityKey(

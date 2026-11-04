@@ -6,6 +6,8 @@ using VertexCRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using VertexCRM.Entities;
+using VertexCRM.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT key is not configured.");

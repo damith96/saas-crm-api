@@ -22,6 +22,110 @@ namespace VertexCRM.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("VertexCRM.Entities.Company", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddressLine1")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<string>("Industry")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StateOrProvince")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("DeletedByUserId");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.HasIndex("TenantId", "CreatedOn");
+
+                    b.HasIndex("TenantId", "IsDeleted", "Name");
+
+                    b.ToTable("Companies", (string)null);
+                });
+
             modelBuilder.Entity("VertexCRM.Entities.PasswordResetToken", b =>
                 {
                     b.Property<int>("Id")
@@ -91,6 +195,95 @@ namespace VertexCRM.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Tenants", (string)null);
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.TenantUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTimeOffset>("JoinedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Role");
+
+                    b.ToTable("TenantUsers", (string)null);
+                });
+
             modelBuilder.Entity("VertexCRM.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -134,12 +327,47 @@ namespace VertexCRM.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int>("PlatformRole")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("UserStatus")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.Company", b =>
+                {
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("VertexCRM.Entities.Tenant", "Tenant")
+                        .WithMany("Companies")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("VertexCRM.Entities.PasswordResetToken", b =>
@@ -162,6 +390,47 @@ namespace VertexCRM.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
+                {
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.TenantUser", b =>
+                {
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VertexCRM.Entities.Tenant", "Tenant")
+                        .WithMany("Members")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VertexCRM.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
+                {
+                    b.Navigation("Companies");
+
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("VertexCRM.Entities.User", b =>
