@@ -34,9 +34,18 @@ public sealed class TenantConfiguration
         builder.Property(t => t.UpdatedOn)
             .HasColumnType("timestamp with time zone");
 
-        builder.HasOne<User>()
+        // Tenant.CreatedByUser — explicit nav so EF doesn't get confused
+        // with the Tenant.Users collection on the same User entity.
+        builder.HasOne(t => t.CreatedByUser)
             .WithMany()
             .HasForeignKey(t => t.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Tenant.Users — users that belong to this tenant (User.TenantId FK).
+        builder.HasMany(t => t.Users)
+            .WithOne(u => u.Tenant)
+            .HasForeignKey(u => u.TenantId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

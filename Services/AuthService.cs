@@ -24,32 +24,16 @@ public class AuthService : IAuthService
     private readonly PasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
-    private readonly IHttpContextAccessor _contextAccessor;
 
     public AuthService(
         ApplicationDbContext context,
-        IHttpContextAccessor contextAccessor,
         IConfiguration configuration,
         IEmailService emailService)
     {
         _context = context;
-        _contextAccessor = contextAccessor;
         _passwordHasher = new PasswordHasher<User>();
         _configuration = configuration;
         _emailService = emailService;
-    }
-
-    public int TenantId
-    {
-        get
-        {
-            var tenantId = _contextAccessor?.HttpContext?.User?.Claims
-                .FirstOrDefault(c => c.Type == "tenant_id")?.Value;
-            if (string.IsNullOrEmpty(tenantId))
-                throw new InvalidOperationException("Could not resolve tenant context.");
-
-            return int.Parse(tenantId);
-        }
     }
 
     public async Task<AuthResponseDTO> RegisterUser(RegisterRequestDTO request)
@@ -66,7 +50,8 @@ public class AuthService : IAuthService
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
-            UserStatus = UserStatus.Pending,
+            Status = UserStatus.Pending,
+            RoleId = RoleConstants.MemberId,   // default role — seeded in RoleConfiguration
             CreatedOn = DateTime.UtcNow,
             IsActive = true
         };
@@ -89,6 +74,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDTO> LoginUser(LoginRequestDTO request)
     {
         var user = await _context.Users
+            .Include(u => u.Role)
             .FirstOrDefaultAsync(x => x.Email == request.Email);
 
         if (user == null)
@@ -273,14 +259,24 @@ public class AuthService : IAuthService
         var audience = _configuration["Jwt:Audience"]
             ?? throw new InvalidOperationException("JWT audience is not configured.");
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-            new Claim("tenant_id", user.TenantId.ToString())
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+
+            new(ClaimTypes.Role, user.Role.Name),
+            new("role_scope", user.Role.Scope.ToString())
         };
 
+        // Only add tenant_id when the user belongs to a tenant.
+        if (user.TenantId.HasValue)
+        {
+            claims.Add(new Claim(
+                "tenant_id",
+                user.TenantId.Value.ToString()
+            ));
+        }
         var securityKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(key)
         );

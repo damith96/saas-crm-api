@@ -6,8 +6,7 @@ using VertexCRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using VertexCRM.Entities;
-using VertexCRM.Configurations;
+using VertexCRM.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITenantContext, TenantContext>();
 
 builder.Services.AddControllers();
 

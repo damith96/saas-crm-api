@@ -126,6 +126,56 @@ namespace VertexCRM.Migrations
                     b.ToTable("Companies", (string)null);
                 });
 
+            modelBuilder.Entity("VertexCRM.Entities.Contact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Contacts", (string)null);
+                });
+
             modelBuilder.Entity("VertexCRM.Entities.PasswordResetToken", b =>
                 {
                     b.Property<int>("Id")
@@ -195,6 +245,63 @@ namespace VertexCRM.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("VertexCRM.Entities.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Default role for self-registered users. Standard CRM access within a tenant.",
+                            Name = "Member",
+                            Scope = 2
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Full administrative control over a tenant workspace.",
+                            Name = "Tenant Admin",
+                            Scope = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Global platform administrator with cross-tenant access.",
+                            Name = "Platform Admin",
+                            Scope = 1
+                        });
+                });
+
             modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
                 {
                     b.Property<int>("Id")
@@ -238,52 +345,6 @@ namespace VertexCRM.Migrations
                     b.ToTable("Tenants", (string)null);
                 });
 
-            modelBuilder.Entity("VertexCRM.Entities.TenantUser", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ChangedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CreatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTimeOffset>("JoinedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.HasIndex("TenantId", "Role");
-
-                    b.ToTable("TenantUsers", (string)null);
-                });
-
             modelBuilder.Entity("VertexCRM.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -309,9 +370,11 @@ namespace VertexCRM.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
-                    b.Property<DateTime?>("LastLoginAt")
+                    b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastName")
@@ -327,20 +390,68 @@ namespace VertexCRM.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<int>("PlatformRole")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("TenantId")
+                    b.Property<int>("RoleId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserStatus")
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TenantId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.UserCompany", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("AssignedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ChangedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedByUserId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("UserId", "CompanyId")
+                        .IsUnique();
+
+                    b.ToTable("UserCompanies", (string)null);
                 });
 
             modelBuilder.Entity("VertexCRM.Entities.Company", b =>
@@ -370,6 +481,17 @@ namespace VertexCRM.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("VertexCRM.Entities.Contact", b =>
+                {
+                    b.HasOne("VertexCRM.Entities.Company", "Company")
+                        .WithMany("Contacts")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("VertexCRM.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("VertexCRM.Entities.User", "User")
@@ -394,48 +516,82 @@ namespace VertexCRM.Migrations
 
             modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
                 {
-                    b.HasOne("VertexCRM.Entities.User", null)
+                    b.HasOne("VertexCRM.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
                 });
 
-            modelBuilder.Entity("VertexCRM.Entities.TenantUser", b =>
+            modelBuilder.Entity("VertexCRM.Entities.User", b =>
                 {
-                    b.HasOne("VertexCRM.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
+                    b.HasOne("VertexCRM.Entities.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("VertexCRM.Entities.Tenant", "Tenant")
-                        .WithMany("Members")
+                        .WithMany("Users")
                         .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Role");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.UserCompany", b =>
+                {
+                    b.HasOne("VertexCRM.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VertexCRM.Entities.Company", "Company")
+                        .WithMany("UserCompanies")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("VertexCRM.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("UserCompanies")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Tenant");
+                    b.Navigation("Company");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.Company", b =>
+                {
+                    b.Navigation("Contacts");
+
+                    b.Navigation("UserCompanies");
+                });
+
+            modelBuilder.Entity("VertexCRM.Entities.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("VertexCRM.Entities.Tenant", b =>
                 {
                     b.Navigation("Companies");
 
-                    b.Navigation("Members");
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("VertexCRM.Entities.User", b =>
                 {
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("UserCompanies");
                 });
 #pragma warning restore 612, 618
         }

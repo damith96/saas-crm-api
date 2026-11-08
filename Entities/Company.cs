@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 namespace VertexCRM.Entities;
 
 public sealed class Company : BaseEntity
@@ -49,6 +52,6 @@ public sealed class Company : BaseEntity
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
 
-    public ICollection<UserCompany> UserCompanies { get; set; }
-        = new List<UserCompany>();
+    public ICollection<UserCompany> UserCompanies { get; set; } = [];
+    public ICollection<Contact> Contacts { get; set; } = [];
 }
