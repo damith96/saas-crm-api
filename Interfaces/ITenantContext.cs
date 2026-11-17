@@ -1,4 +1,4 @@
-namespace VertexCRM.Abstractions;
+namespace VertexCRM.Interfaces;
 
 public interface ITenantContext
 {

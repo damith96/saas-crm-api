@@ -54,4 +54,9 @@ public sealed class Company : BaseEntity
 
     public ICollection<UserCompany> UserCompanies { get; set; } = [];
     public ICollection<Contact> Contacts { get; set; } = [];
+
+    public ICollection<Deal> Deals { get; set; } = [];
+    public ICollection<CrmTask> Tasks { get; set; } = [];
+
+    public ICollection<Activity> Activities { get; set; } = [];
 }

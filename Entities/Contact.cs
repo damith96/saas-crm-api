@@ -12,6 +12,10 @@ public sealed class Contact : BaseEntity
 
     public string? JobTitle { get; set; }
     public string? Description { get; set; }
+    public bool IsDeleted { get; set; } = false;
 
     public Company Company { get; set; } = null!;
+    public ICollection<Deal> Deals { get; set; } = [];
+    public ICollection<CrmTask> Tasks { get; set; } = [];
+    public ICollection<Activity> Activities { get; set; } = [];
 }

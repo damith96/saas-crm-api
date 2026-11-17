@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using VertexCRM.Abstractions;
+using VertexCRM.Interfaces;
 using VertexCRM.Entities;
 
 namespace VertexCRM.Data;
@@ -23,6 +23,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<Deal> Deals => Set<Deal>();
+    public DbSet<CrmTask> Tasks => Set<CrmTask>();
+    public DbSet<Activity> Activities => Set<Activity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,7 +44,30 @@ public class ApplicationDbContext : DbContext
             .HasQueryFilter(c =>
                 _tenantContext.TenantId.HasValue &&
                 c.Company.TenantId == _tenantContext.TenantId.Value &&
-                !c.Company.IsDeleted
+                !c.Company.IsDeleted &&
+                !c.IsDeleted
             );
+
+        modelBuilder.Entity<Deal>()
+            .HasQueryFilter(d =>
+                _tenantContext.TenantId.HasValue &&
+                d.Company.TenantId == _tenantContext.TenantId.Value &&
+                !d.Company.IsDeleted &&
+                !d.IsDeleted
+            );
+
+        modelBuilder.Entity<CrmTask>()
+        .HasQueryFilter(t =>
+            _tenantContext.TenantId.HasValue &&
+            t.Company.TenantId == _tenantContext.TenantId.Value &&
+            !t.Company.IsDeleted &&
+            !t.IsDeleted);
+
+        modelBuilder.Entity<Activity>()
+        .HasQueryFilter(a =>
+            _tenantContext.TenantId.HasValue &&
+            a.Company.TenantId == _tenantContext.TenantId.Value &&
+            !a.Company.IsDeleted &&
+            !a.IsDeleted);
     }
 }

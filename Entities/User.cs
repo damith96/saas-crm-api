@@ -38,4 +38,5 @@ public sealed class User : BaseEntity
 
     public ICollection<RefreshToken> RefreshTokens { get; set; }
         = [];
+    public ICollection<CrmTask> AssignedTasks { get; set; } = [];
 }

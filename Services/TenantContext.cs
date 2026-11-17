@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using VertexCRM.Abstractions;
+using VertexCRM.Interfaces;
 
 namespace VertexCRM.Services;
 
