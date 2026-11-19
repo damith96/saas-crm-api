@@ -9,19 +9,16 @@ namespace VertexCRM.Services;
 public class ActivityService : IActivityService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ICompanyAccessService _companyAccessService;
     private readonly ITenantContext _tenantContext;
 
-    public ActivityService(ApplicationDbContext context, ICompanyAccessService companyAccessService, ITenantContext tenantContext)
+    public ActivityService(ApplicationDbContext context, ITenantContext tenantContext)
     {
         _context = context;
-        _companyAccessService = companyAccessService;
         _tenantContext = tenantContext;
     }
 
     public async Task<ActivityResponseDTO> CreateActivity(int companyId, CreateActivityRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
         await EnsureContactBelongsToCompany(request.ContactId, companyId);
         await EnsureDealBelongsToCompany(request.DealId, companyId);
 
@@ -52,8 +49,6 @@ public class ActivityService : IActivityService
 
     public async Task DeleteActivity(int companyId, int activityId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var activity = await _context.Activities.FirstOrDefaultAsync(t => t.Id == activityId && t.CompanyId == companyId);
         if (activity is null)
         {
@@ -70,8 +65,6 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityResponseDTO> GetActivityById(int companyId, int activityId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var activity = await _context.Activities
             .AsNoTracking()
             .FirstOrDefaultAsync(c =>
@@ -88,8 +81,6 @@ public class ActivityService : IActivityService
 
     public async Task<List<ActivityResponseDTO>> GetActivities(int companyId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var activities = await _context.Activities
             .AsNoTracking()
             .Where(a => a.CompanyId == companyId)
@@ -101,8 +92,6 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityResponseDTO> UpdateActivity(int companyId, int activityId, UpdateActivityRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         var activity = await _context.Activities
             .FirstOrDefaultAsync(a =>
                 a.Id == activityId &&
@@ -126,18 +115,6 @@ public class ActivityService : IActivityService
         await _context.SaveChangesAsync();
 
         return MapToResponse(activity);
-    }
-
-    private async Task EnsureCompanyAccess(int companyId)
-    {
-        var hasAccess = await _companyAccessService
-            .CanAccessCompanyAsync(companyId);
-
-        if (!hasAccess)
-        {
-            // Avoid revealing whether another tenant's company exists.
-            throw new KeyNotFoundException("Company not found.");
-        }
     }
 
     private async Task EnsureContactBelongsToCompany(int? contactId, int companyId)

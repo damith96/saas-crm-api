@@ -11,16 +11,13 @@ namespace VertexCRM.Services;
 public sealed class DealService : IDealService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ICompanyAccessService _companyAccessService;
     private readonly ITenantContext _tenantContext;
 
     public DealService(
         ApplicationDbContext context,
-        ICompanyAccessService companyAccessService,
         ITenantContext tenantContext)
     {
         _context = context;
-        _companyAccessService = companyAccessService;
         _tenantContext = tenantContext;
     }
 
@@ -29,8 +26,6 @@ public sealed class DealService : IDealService
         int companyId,
         CreateDealRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         await EnsureContactBelongsToCompany(request.ContactId, companyId);
 
         var deal = new Deal
@@ -59,13 +54,11 @@ public sealed class DealService : IDealService
     // GET ALL DEALS FOR A COMPANY
     public async Task<List<DealResponseDTO>> GetDeals(int companyId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var deals = await _context.Deals
-            .AsNoTracking()
-            .Where(d => d.CompanyId == companyId)
-            .OrderByDescending(d => d.Id)
-            .ToListAsync();
+             .AsNoTracking()
+             .Where(d => d.CompanyId == companyId)
+             .OrderByDescending(d => d.Id)
+             .ToListAsync();
 
         return deals.Select(MapToResponse).ToList();
     }
@@ -75,13 +68,11 @@ public sealed class DealService : IDealService
         int companyId,
         int dealId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var deal = await _context.Deals
-            .AsNoTracking()
-            .FirstOrDefaultAsync(d =>
-                d.Id == dealId &&
-                d.CompanyId == companyId);
+             .AsNoTracking()
+             .FirstOrDefaultAsync(d =>
+                 d.Id == dealId &&
+                 d.CompanyId == companyId);
 
         if (deal is null)
             throw new KeyNotFoundException("Deal not found.");
@@ -95,8 +86,6 @@ public sealed class DealService : IDealService
         int dealId,
         UpdateDealRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         var deal = await _context.Deals
             .FirstOrDefaultAsync(d =>
                 d.Id == dealId &&
@@ -124,12 +113,10 @@ public sealed class DealService : IDealService
     // SOFT DELETE DEAL
     public async Task DeleteDeal(int companyId, int dealId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var deal = await _context.Deals
-            .FirstOrDefaultAsync(d =>
-                d.Id == dealId &&
-                d.CompanyId == companyId);
+             .FirstOrDefaultAsync(d =>
+                 d.Id == dealId &&
+                 d.CompanyId == companyId);
 
         if (deal is null)
             throw new KeyNotFoundException("Deal not found.");
@@ -139,16 +126,6 @@ public sealed class DealService : IDealService
         deal.DeletedByUserId = _tenantContext.UserId;
 
         await _context.SaveChangesAsync();
-    }
-
-    // CHECK COMPANY ACCESS
-    private async Task EnsureCompanyAccess(int companyId)
-    {
-        var hasAccess =
-            await _companyAccessService.CanAccessCompanyAsync(companyId);
-
-        if (!hasAccess)
-            throw new KeyNotFoundException("Company not found.");
     }
 
     // CHECK WHETHER CONTACT BELONGS TO THE SAME COMPANY

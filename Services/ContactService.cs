@@ -9,16 +9,13 @@ namespace VertexCRM.Services;
 public sealed class ContactService : IContactService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ICompanyAccessService _companyAccessService;
     private readonly ITenantContext _tenantContext;
 
     public ContactService(
         ApplicationDbContext context,
-        ICompanyAccessService companyAccessService,
         ITenantContext tenantContext)
     {
         _context = context;
-        _companyAccessService = companyAccessService;
         _tenantContext = tenantContext;
     }
 
@@ -26,8 +23,6 @@ public sealed class ContactService : IContactService
         int companyId,
         CreateContactRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         var contact = new Contact
         {
             CompanyId = companyId,
@@ -48,8 +43,6 @@ public sealed class ContactService : IContactService
 
     public async Task<List<ContactResponseDTO>> GetContacts(int companyId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var contacts = await _context.Contacts
             .AsNoTracking()
             .Where(c => c.CompanyId == companyId)
@@ -64,13 +57,11 @@ public sealed class ContactService : IContactService
         int companyId,
         int contactId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var contact = await _context.Contacts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c =>
-                c.Id == contactId &&
-                c.CompanyId == companyId);
+           .AsNoTracking()
+           .FirstOrDefaultAsync(c =>
+               c.Id == contactId &&
+               c.CompanyId == companyId);
 
         if (contact is null)
         {
@@ -85,8 +76,6 @@ public sealed class ContactService : IContactService
         int contactId,
         UpdateContactRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         var contact = await _context.Contacts
             .FirstOrDefaultAsync(c =>
                 c.Id == contactId &&
@@ -111,12 +100,10 @@ public sealed class ContactService : IContactService
 
     public async Task DeleteContact(int companyId, int contactId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var contact = await _context.Contacts
-            .FirstOrDefaultAsync(c =>
-                c.Id == contactId &&
-                c.CompanyId == companyId);
+             .FirstOrDefaultAsync(c =>
+                 c.Id == contactId &&
+                 c.CompanyId == companyId);
 
         if (contact is null)
         {
@@ -128,18 +115,6 @@ public sealed class ContactService : IContactService
         // contact.DeletedByUserId = _tenantContext.UserId;
 
         await _context.SaveChangesAsync();
-    }
-
-    private async Task EnsureCompanyAccess(int companyId)
-    {
-        var hasAccess = await _companyAccessService
-            .CanAccessCompanyAsync(companyId);
-
-        if (!hasAccess)
-        {
-            // Avoid revealing whether another tenant's company exists.
-            throw new KeyNotFoundException("Company not found.");
-        }
     }
 
     private static ContactResponseDTO MapToResponse(Contact contact)

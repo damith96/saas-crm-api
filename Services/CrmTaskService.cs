@@ -12,19 +12,16 @@ namespace VertexCRM.Services;
 public sealed class CrmTaskService : ICrmTaskService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ICompanyAccessService _companyAccessService;
     private readonly ITenantContext _tenantContext;
 
-    public CrmTaskService(ApplicationDbContext context, ICompanyAccessService companyAccessService, ITenantContext tenantContext)
+    public CrmTaskService(ApplicationDbContext context, ITenantContext tenantContext)
     {
         _context = context;
-        _companyAccessService = companyAccessService;
         _tenantContext = tenantContext;
     }
 
     public async Task<CrmTaskResponseDTO> CreateCrmTask(int companyId, CreateCrmTaskRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
         await EnsureContactBelongsToCompany(request.ContactId, companyId);
         await EnsureDealBelongsToCompany(request.DealId, companyId);
         await EnsureAssignedUserAccess(request.AssignedToUserId, companyId);
@@ -50,8 +47,6 @@ public sealed class CrmTaskService : ICrmTaskService
 
     public async Task DeleteCrmTask(int companyId, int taskId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.CompanyId == companyId);
         if (task is null)
         {
@@ -68,8 +63,6 @@ public sealed class CrmTaskService : ICrmTaskService
 
     public async Task<CrmTaskResponseDTO> GetCrmTaskById(int companyId, int taskId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var task = await _context.Tasks
             .AsNoTracking()
             .FirstOrDefaultAsync(c =>
@@ -86,25 +79,21 @@ public sealed class CrmTaskService : ICrmTaskService
 
     public async Task<List<CrmTaskResponseDTO>> GetCrmTasks(int companyId)
     {
-        await EnsureCompanyAccess(companyId);
-
         var tasks = await _context.Tasks
-            .AsNoTracking()
-            .Where(t => t.CompanyId == companyId)
-            .OrderBy(t => t.DueDate)
-            .ToListAsync();
+                .AsNoTracking()
+                .Where(t => t.CompanyId == companyId)
+                .OrderBy(t => t.DueDate)
+                .ToListAsync();
 
         return [.. tasks.Select(MapToResponse)];
     }
 
     public async Task<CrmTaskResponseDTO> UpdateCrmTask(int companyId, int taskId, UpdateCrmTaskRequestDTO request)
     {
-        await EnsureCompanyAccess(companyId);
-
         var task = await _context.Tasks
-            .FirstOrDefaultAsync(c =>
-                c.Id == taskId &&
-                c.CompanyId == companyId);
+             .FirstOrDefaultAsync(c =>
+                 c.Id == taskId &&
+                 c.CompanyId == companyId);
 
         if (task is null)
         {
@@ -128,18 +117,6 @@ public sealed class CrmTaskService : ICrmTaskService
         await _context.SaveChangesAsync();
 
         return MapToResponse(task);
-    }
-
-    private async Task EnsureCompanyAccess(int companyId)
-    {
-        var hasAccess = await _companyAccessService
-            .CanAccessCompanyAsync(companyId);
-
-        if (!hasAccess)
-        {
-            // Avoid revealing whether another tenant's company exists.
-            throw new KeyNotFoundException("Company not found.");
-        }
     }
 
     private async Task EnsureContactBelongsToCompany(int? contactId, int companyId)

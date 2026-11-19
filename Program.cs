@@ -6,6 +6,7 @@ using VertexCRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using VertexCRM.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,10 +20,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
 builder.Services.AddScoped<IContactService, ContactService>();
-builder.Services.AddScoped<ICompanyAccessService, CompanyAccessService>();
 builder.Services.AddScoped<IDealService, DealService>();
 builder.Services.AddScoped<ICrmTaskService, CrmTaskService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<CompanyAccessFilter>();
 
 builder.Services.AddControllers();
 
