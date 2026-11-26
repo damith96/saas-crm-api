@@ -69,5 +69,6 @@ public class ApplicationDbContext : DbContext
             a.Company.TenantId == _tenantContext.TenantId.Value &&
             !a.Company.IsDeleted &&
             !a.IsDeleted);
+
     }
 }

@@ -23,6 +23,7 @@ builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IDealService, DealService>();
 builder.Services.AddScoped<ICrmTaskService, CrmTaskService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<CompanyAccessFilter>();
 
 builder.Services.AddControllers();
@@ -72,7 +73,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("TenantAdmin", policy => policy.RequireRole("TenantAdmin"));
+    // options.FallbackPolicy = new AuthorizationPolicyBuilder()
+    //     .RequireAuthenticatedUser()
+    //     .Build();
+});
 
 var app = builder.Build();
 
